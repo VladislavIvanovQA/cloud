@@ -1,0 +1,5 @@
+# Project exclude paths
+/cloud-storage-oct-2021-client/target/
+/cloud-storage-oct-2021-server/target/
+/root
+/server_root
