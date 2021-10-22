@@ -24,13 +24,13 @@ public class Server {
         }
     }
 
+    public static void main(String[] args) {
+        new Server();
+    }
+
     public void broadCastMessage(String message) throws Exception {
         for (ChatHandler client : clients) {
             client.sendMessage(message);
         }
-    }
-
-    public static void main(String[] args) {
-        new Server();
     }
 }

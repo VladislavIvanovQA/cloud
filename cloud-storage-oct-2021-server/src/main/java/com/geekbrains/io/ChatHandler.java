@@ -6,23 +6,21 @@ import java.io.FileOutputStream;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class ChatHandler implements Runnable {
 
     private static final int BUFFER_SIZE = 1024;
-
-    private byte[] buffer;
-    private final Path root;
-    private Path clientDir;
     private static int counter = 0;
+    private final Path root;
     private final String userName;
     private final Server server;
     private final DataInputStream dis;
     private final DataOutputStream dos;
     private final SimpleDateFormat format;
+    private byte[] buffer;
+    private Path clientDir;
 
     public ChatHandler(Socket socket, Server server) throws Exception {
         buffer = new byte[BUFFER_SIZE];

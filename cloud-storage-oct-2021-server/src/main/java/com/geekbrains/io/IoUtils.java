@@ -17,7 +17,7 @@ public class IoUtils {
         }
 
         for (int i = 1; i < 11; i++) {
-            Path userDir  =root.resolve("user" + i);
+            Path userDir = root.resolve("user" + i);
             if (!Files.exists(userDir)) {
                 Files.createDirectory(userDir);
             }

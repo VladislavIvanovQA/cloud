@@ -56,6 +56,10 @@ public class NioServer {
         }
     }
 
+    public static void main(String[] args) throws Exception {
+        new NioServer();
+    }
+
     private void handleRead(SelectionKey key) throws Exception {
 
         SocketChannel channel = (SocketChannel) key.channel();
@@ -146,10 +150,5 @@ public class NioServer {
         SocketChannel channel = server.accept();
         channel.configureBlocking(false);
         channel.register(selector, SelectionKey.OP_READ, "Hello world!");
-    }
-
-
-    public static void main(String[] args) throws Exception {
-        new NioServer();
     }
 }
