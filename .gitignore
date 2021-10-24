@@ -3,5 +3,6 @@
 /cloud-storage-oct-2021-server/target/
 /root
 /server_root
+/server_folder
 .idea
 *.iml

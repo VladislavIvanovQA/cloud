@@ -10,6 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +29,7 @@ public class NioServer {
 
 
     public NioServer() throws Exception {
-        root = Path.of("root");
+        root = Paths.get("root");
         buffer = ByteBuffer.allocate(256);
         server = ServerSocketChannel.open(); // accept -> SocketChannel
         server.bind(new InetSocketAddress(8189));
