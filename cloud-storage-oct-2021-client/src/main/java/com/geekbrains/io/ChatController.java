@@ -1,14 +1,14 @@
 package com.geekbrains.io;
 
+import com.geekbrains.model.AbstractMessage;
+import io.netty.handler.codec.serialization.ObjectDecoderInputStream;
+import io.netty.handler.codec.serialization.ObjectEncoderOutputStream;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
@@ -17,20 +17,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class ChatController implements Initializable {
-
     public ListView<String> listView;
     public TextField input;
     private Path root;
-    private byte[] buffer;
-    private DataInputStream dis;
-    private DataOutputStream dos;
+    private String userName;
+    private ObjectDecoderInputStream dis;
+    private ObjectEncoderOutputStream dos;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        buffer = new byte[1024];
+        userName = UUID.randomUUID().toString();
         root = Paths.get("root");
         if (!Files.exists(root)) {
             try {
@@ -59,14 +59,14 @@ public class ChatController implements Initializable {
 
         try {
             Socket socket = new Socket("localhost", 8189);
-            dis = new DataInputStream(socket.getInputStream());
-            dos = new DataOutputStream(socket.getOutputStream());
+            dis = new ObjectDecoderInputStream(socket.getInputStream());
+            dos = new ObjectEncoderOutputStream(socket.getOutputStream());
             Thread readThread = new Thread(() -> {
                 try {
                     while (true) {
-                        String message = dis.readUTF();
+                        AbstractMessage message = (AbstractMessage) dis.readObject();
                         System.out.println(message);
-                        Platform.runLater(() -> input.setText(message));
+                        Platform.runLater(() -> input.setText(message.getFilename()));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -91,16 +91,11 @@ public class ChatController implements Initializable {
         String fileName = input.getText();
         input.clear();
         Path filePath = root.resolve(fileName);
+
+        byte[] file = null;
         if (Files.exists(filePath)) {
-            dos.writeUTF(fileName);
-            dos.writeLong(Files.size(filePath));
-            try (FileInputStream fis = new FileInputStream(filePath.toFile())) {
-                int read;
-                while ((read = fis.read(buffer)) != -1) {
-                    dos.write(buffer, 0, read);
-                }
-            }
-            dos.flush();
+            file = Files.readAllBytes(filePath);
         }
+        dos.writeObject(new AbstractMessage(fileName, userName, file));
     }
 }
