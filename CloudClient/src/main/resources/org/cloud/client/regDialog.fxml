@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="167.0" prefWidth="317.0"
+            xmlns="http://javafx.com/javafx/11.0.2" fx:controller="org.cloud.client.controllers.RegController">
+    <children>
+        <Label layoutX="21.0" layoutY="25.0" text="Логин:" AnchorPane.bottomAnchor="160.0" AnchorPane.leftAnchor="21.0"
+               AnchorPane.rightAnchor="259.0" AnchorPane.topAnchor="25.0"/>
+        <Label layoutX="21.0" layoutY="93.0" text="Пароль:" AnchorPane.leftAnchor="21.0" AnchorPane.topAnchor="93.0"/>
+        <Label layoutX="21.0" layoutY="41.0" prefHeight="47.0" prefWidth="96.0" text="Имя пользователя:" wrapText="true"
+               AnchorPane.leftAnchor="21.0" AnchorPane.topAnchor="41.0"/>
+        <TextField fx:id="loginField" layoutX="106.0" layoutY="21.0"/>
+        <TextField fx:id="userName" layoutX="106.0" layoutY="52.0"/>
+        <PasswordField fx:id="passwordField" layoutX="106.0" layoutY="89.0"/>
+        <Button fx:id="registrationButton" layoutX="40.0" layoutY="136.0" mnemonicParsing="false"
+                onAction="#registration" prefHeight="40.0" prefWidth="238.0" text="Регистрация"/>
+    </children>
+</AnchorPane>
