@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class DbService {
-    private static final String DB_URL = "jdbc:sqlite:CloudServer/chat.db";
+    private static final String DB_URL = "jdbc:sqlite:CloudServer/cloud.db";
     private Logger log = LoggerFactory.getLogger(DbService.class);
     private Connection connection;
 
