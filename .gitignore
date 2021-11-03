@@ -5,4 +5,5 @@
 /server_root
 /server_folder
 .idea
+*.log
 *.iml

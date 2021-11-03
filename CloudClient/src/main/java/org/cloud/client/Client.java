@@ -1,7 +1,6 @@
 package org.cloud.client;
 
 import javafx.application.Application;
-import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
@@ -113,7 +112,7 @@ public class Client extends Application {
         regStage.initModality(Modality.WINDOW_MODAL);
         regStage.setScene(new Scene(regDialogPanel));
         regStage.setTitle("Регистрация");
-        regStage.setOnCloseRequest(Event::consume);
+        regStage.setOnCloseRequest(event -> System.exit(0));
     }
 
     private void setStageForSecondScreen(Stage primaryStage) {

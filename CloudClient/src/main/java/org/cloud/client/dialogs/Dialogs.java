@@ -34,7 +34,8 @@ public class Dialogs {
     }
 
     public enum RegError {
-        EMPTY_CREDENTIALS("Логин, пароль и имя пользователя должны быть указаны!");
+        EMPTY_CREDENTIALS("Логин, пароль и имя пользователя должны быть указаны!"),
+        USER_EXISTS("Пользователь уже существует!");
 
         private static final String TITLE = "Ошибка регистрации";
         private static final String TYPE = TITLE;

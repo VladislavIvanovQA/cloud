@@ -60,9 +60,7 @@ public class CloudMainController {
                 ClientMessageCommandData data = (ClientMessageCommandData) command.getData();
                 Dialogs.NetworkError.SEND_MESSAGE.show();
             }
-//            switch (command.getType()) {
             System.out.println("Listener: " + command);
-//            }
         });
     }
 
