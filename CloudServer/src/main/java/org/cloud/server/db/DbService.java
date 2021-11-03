@@ -32,7 +32,7 @@ public class DbService {
 
     public String createUserOrError(User user) {
         try {
-            if (findUserByLogin(user.getLogin())) {
+            if (!findUserByLogin(user.getLogin())) {
                 return createUser(user).getUsername();
             } else {
                 return null;
@@ -55,7 +55,7 @@ public class DbService {
     private boolean findUserByLogin(String login) throws SQLException {
         ResultSet resultSet = connection.createStatement()
                 .executeQuery("SELECT * FROM user WHERE login='" + login + "'");
-        return resultSet.getFetchSize() == 0;
+        return resultSet.next();
     }
 
     private User createUser(User user) throws SQLException {

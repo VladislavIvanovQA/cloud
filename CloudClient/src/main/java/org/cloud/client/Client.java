@@ -153,6 +153,7 @@ public class Client extends Application {
 
     public void switchToRegistrationWindow() {
         getAuthStage().close();
+        getAuthController().close();
         getRegController().initMessageHandler();
         getRegStage().show();
     }
