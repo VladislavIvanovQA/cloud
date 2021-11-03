@@ -2,6 +2,8 @@ package org.cloud.client.model;
 
 import io.netty.handler.codec.serialization.ObjectDecoderInputStream;
 import io.netty.handler.codec.serialization.ObjectEncoderOutputStream;
+import javafx.application.Platform;
+import org.cloud.client.dialogs.Dialogs;
 import org.cloud.core.Command;
 import org.cloud.core.commands.SendFileCommand;
 
@@ -71,6 +73,7 @@ public class Network {
                     if (command == null) {
                         continue;
                     }
+                    System.out.println(listeners);
                     for (ReadCommandListener messageListener : listeners) {
                         messageListener.processReceivedCommand(command);
                     }
@@ -114,9 +117,18 @@ public class Network {
         sendCommand(Command.regCommand(login, password, username));
     }
 
+    public void deleteFileMessage(String fileName) throws IOException {
+        sendCommand(Command.deleteFileCommand(fileName));
+    }
+
     private void sendCommand(Command command) throws IOException {
         try {
             System.out.println("Client: " + command);
+            if (!isConnected()) {
+                if (!connect()) {
+                    Platform.runLater(Dialogs.NetworkError.SERVER_CONNECT::show);
+                }
+            }
             dos.writeObject(command);
         } catch (IOException e) {
             System.err.println("Failed to send message to server");
@@ -125,18 +137,20 @@ public class Network {
     }
 
     public ReadCommandListener addReadMessageListener(ReadCommandListener listener) {
+        System.out.println("Add listener");
         listeners.add(listener);
         return listener;
     }
 
     public void removeReadMessageListener(ReadCommandListener listener) {
+        System.out.println("Remove listener");
         listeners.remove(listener);
     }
 
     public void clearReadMessageListener() {
+        System.out.println("Clear listener");
         listeners.clear();
     }
-
 
     public void close() {
         try {

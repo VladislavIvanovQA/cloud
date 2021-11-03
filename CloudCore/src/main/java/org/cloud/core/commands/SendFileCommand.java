@@ -9,7 +9,6 @@ import java.io.Serializable;
 @Builder
 public class SendFileCommand implements Serializable {
     private static final int BUTCH_SIZE = 8192;
-
     private final String name;
     private final long size;
     private final byte[] bytes;

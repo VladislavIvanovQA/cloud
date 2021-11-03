@@ -14,6 +14,10 @@ public class Dialogs {
         alert.showAndWait();
     }
 
+    public static void show(Alert.AlertType dialogType, String title, String type, String message) {
+        showDialog(dialogType, title, type, message);
+    }
+
     public enum AuthError {
         EMPTY_CREDENTIALS("Логин и пароль должны быть указаны!"),
         INVALID_CREDENTIALS("Логин и пароль заданы некорректно!"),

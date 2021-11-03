@@ -1,17 +1,15 @@
 package org.cloud.core;
 
+import lombok.Data;
 import org.cloud.core.commands.*;
 import org.cloud.core.dto.User;
 
 import java.io.Serializable;
 
+@Data
 public class Command implements Serializable {
-
     private Object data;
     private CommandType type;
-
-    public Command() {
-    }
 
     public static Command authCommand(String login, String password) {
         Command command = new Command();
@@ -62,27 +60,10 @@ public class Command implements Serializable {
         return command;
     }
 
-    public Object getData() {
-        return data;
-    }
-
-    public void setData(Object data) {
-        this.data = data;
-    }
-
-    public CommandType getType() {
-        return type;
-    }
-
-    public void setType(CommandType type) {
-        this.type = type;
-    }
-
-    @Override
-    public String toString() {
-        return "Command{" +
-                "data=" + data +
-                ", type=" + type +
-                '}';
+    public static Command deleteFileCommand(String fileName) {
+        Command command = new Command();
+        command.type = CommandType.DELETE_FILE;
+        command.data = new DeleteFileCommand(fileName);
+        return command;
     }
 }

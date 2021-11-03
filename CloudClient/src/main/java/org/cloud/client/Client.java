@@ -41,7 +41,6 @@ public class Client extends Application {
     public void start(Stage primaryStage) throws Exception {
         this.mainStage = primaryStage;
         initViews();
-        getChatStage().show();
         getAuthStage().show();
         getAuthController().initMessageHandler();
     }
@@ -136,19 +135,23 @@ public class Client extends Application {
         super.stop();
     }
 
-    public Stage getChatStage() {
-        return mainStage;
-    }
-
     public void switchToMainChatWindow(String username) {
         Network.username = username;
+        getMainStage().show();
         getMainStage().setTitle("Имя пользователя: " + username);
         getMainController().initMessageHandler();
         getMainController().init();
         getAuthController().close();
+        getAuthStage().close();
         getRegController().close();
         getRegStage().close();
-        getAuthStage().close();
+    }
+
+    public void switchToAuthWindow() {
+        getMainController().close();
+        getMainStage().close();
+        getAuthStage().show();
+        getAuthController().initMessageHandler();
     }
 
     public void switchToRegistrationWindow() {

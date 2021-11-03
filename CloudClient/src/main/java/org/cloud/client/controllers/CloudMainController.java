@@ -1,5 +1,6 @@
 package org.cloud.client.controllers;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventTarget;
@@ -11,16 +12,17 @@ import javafx.scene.control.TreeView;
 import javafx.scene.input.*;
 import javafx.scene.text.Text;
 import org.cloud.client.Client;
-import org.cloud.client.dialogs.Dialogs;
 import org.cloud.client.dto.FileDTO;
 import org.cloud.client.model.Network;
+import org.cloud.client.model.ReadCommandListener;
 import org.cloud.client.utils.FileTree;
 import org.cloud.core.CommandType;
-import org.cloud.core.commands.ClientMessageCommandData;
+import org.cloud.core.commands.MessageCommand;
 import org.cloud.core.commands.SendFileCommand;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -34,6 +36,7 @@ public class CloudMainController {
     public TreeView<File> tree;
     @FXML
     public ComboBox<FileDTO> diskList;
+    private ReadCommandListener readCommandListener;
 
     public void init() {
         File firstDisk = Arrays.stream(File.listRoots())
@@ -54,26 +57,30 @@ public class CloudMainController {
         });
     }
 
+    private Network getNetwork() {
+        return Network.getInstance();
+    }
+
     public void initMessageHandler() {
-        Network.getInstance().addReadMessageListener(command -> {
-            if (command.getType() == CommandType.MESSAGE) {
-                ClientMessageCommandData data = (ClientMessageCommandData) command.getData();
-                Dialogs.NetworkError.SEND_MESSAGE.show();
-            }
+        readCommandListener = getNetwork().addReadMessageListener(command -> {
             System.out.println("Listener: " + command);
+            switch (command.getType()) {
+                case AUTH_TIME_OUT: {
+                    System.out.println("switch");
+                    Platform.runLater(() -> Client.INSTANCE.switchToAuthWindow());
+                }
+            }
+            if (command.getType() == CommandType.MESSAGE) {
+                MessageCommand data = (MessageCommand) command.getData();
+//                Platform.runLater(() -> {
+//                    String message = "Message";
+//                    Dialogs.show(Alert.AlertType.INFORMATION, message, message, data.getMessage());
+//                });
+            }
         });
     }
 
-    public void reconnectToServer() {
-        Network network = Network.getInstance();
-        network.clearReadMessageListener();
-        if (!network.isConnected()) {
-            network.connect();
-        }
-    }
-
     public void initContextMenu(MouseEvent mouseEvent) {
-        reconnectToServer();
         if (mouseEvent.getButton().equals(MouseButton.SECONDARY)) {
             MenuItem test = new MenuItem("Send file to cloud");
             EventTarget target = mouseEvent.getTarget();
@@ -100,7 +107,7 @@ public class CloudMainController {
                                         .endByteNum(read)
                                         .build();
                                 isFirstButch = false;
-                                Network.getInstance().sendFile(message);
+                                getNetwork().sendFile(message);
                             }
                         } catch (Exception e) {
                             System.err.println("e: " + e);
@@ -112,6 +119,11 @@ public class CloudMainController {
                 MenuItem test1 = new MenuItem("Delete file in cloud");
                 test1.setOnAction(event -> {
                     System.out.println("Delete file: " + pathToFile);
+                    try {
+                        getNetwork().deleteFileMessage(Path.of(pathToFile.get()).getFileName().toString());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 });
 
                 MenuItem test2 = new MenuItem("Share file");
@@ -126,5 +138,9 @@ public class CloudMainController {
     public void selectDisk(ActionEvent actionEvent) {
         tree.setRoot(new FileTree(diskList.getValue().getFile()));
         tree.refresh();
+    }
+
+    public void close() {
+        getNetwork().removeReadMessageListener(readCommandListener);
     }
 }

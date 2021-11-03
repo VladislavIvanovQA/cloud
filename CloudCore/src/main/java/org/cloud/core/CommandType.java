@@ -7,5 +7,6 @@ public enum CommandType {
     REG,
     ERROR,
     SEND_FILE,
+    DELETE_FILE,
     MESSAGE
 }
