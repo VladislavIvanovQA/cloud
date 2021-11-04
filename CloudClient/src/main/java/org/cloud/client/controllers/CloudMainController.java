@@ -5,19 +5,17 @@ import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventTarget;
 import javafx.fxml.FXML;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.text.Text;
 import org.cloud.client.Client;
+import org.cloud.client.dialogs.Dialogs;
 import org.cloud.client.dto.FileDTO;
 import org.cloud.client.model.Network;
 import org.cloud.client.model.ReadCommandListener;
 import org.cloud.client.utils.FileTree;
 import org.cloud.core.CommandType;
-import org.cloud.core.commands.MessageCommand;
+import org.cloud.core.commands.ErrorCommandData;
 import org.cloud.core.commands.SendFileCommand;
 
 import java.io.File;
@@ -31,12 +29,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class CloudMainController {
-    private final byte[] buffer = new byte[8192];
+    public static final String ERROR_TITLE = "Error";
+    public static final String ERROR_DISCARD_FILE = "Discard file!";
+    private final byte[] buffer = new byte[64000];
     @FXML
     public TreeView<File> tree;
     @FXML
     public ComboBox<FileDTO> diskList;
     private ReadCommandListener readCommandListener;
+    private Path filePath;
+    private ReadCommandListener fileMessageListener;
 
     public void init() {
         File firstDisk = Arrays.stream(File.listRoots())
@@ -66,16 +68,32 @@ public class CloudMainController {
             System.out.println("Listener: " + command);
             switch (command.getType()) {
                 case AUTH_TIME_OUT: {
-                    System.out.println("switch");
                     Platform.runLater(() -> Client.INSTANCE.switchToAuthWindow());
+                    break;
                 }
-            }
-            if (command.getType() == CommandType.MESSAGE) {
-                MessageCommand data = (MessageCommand) command.getData();
-//                Platform.runLater(() -> {
-//                    String message = "Message";
-//                    Dialogs.show(Alert.AlertType.INFORMATION, message, message, data.getMessage());
-//                });
+                case ERROR: {
+                    ErrorCommandData commandData = (ErrorCommandData) command.getData();
+                    Platform.runLater(() -> Dialogs.show(
+                            Alert.AlertType.ERROR,
+                            ERROR_TITLE,
+                            commandData.getErrorMessage(),
+                            commandData.getErrorMessage()));
+                    break;
+
+                }
+                case DISCARD_FILE: {
+                    getNetwork().removeReadMessageListener(fileMessageListener);
+                    Platform.runLater(() -> Dialogs.show(
+                            Alert.AlertType.ERROR,
+                            ERROR_DISCARD_FILE,
+                            command.getData().toString(),
+                            command.getData().toString()));
+                    break;
+                }
+                case SENDER_FILE: {
+                    getNetwork().removeReadMessageListener(fileMessageListener);
+                    break;
+                }
             }
         });
     }
@@ -89,28 +107,41 @@ public class CloudMainController {
                 test.setOnAction(event -> {
                     System.out.println("Send file: " + pathToFile);
                     Thread thread = new Thread(() -> {
-                        boolean isFirstButch = true;
                         if (System.getProperty("os.name").toLowerCase().contains("win")) {
                             pathToFile.set(pathToFile.get().replace("\\", "\\\\"));
                         }
-                        Path filePath = Path.of(pathToFile.get());
-                        try (FileInputStream is = new FileInputStream(filePath.toFile())) {
+                        filePath = Path.of(pathToFile.get());
+                        try {
                             long size = Files.size(filePath);
-                            int read;
-                            while ((read = is.read(buffer)) != -1) {
-                                SendFileCommand message = SendFileCommand.builder()
-                                        .bytes(buffer)
-                                        .name(filePath.getFileName().toString())
-                                        .size(size)
-                                        .isFirstButch(isFirstButch)
-                                        .isFinishBatch(is.available() <= 0)
-                                        .endByteNum(read)
-                                        .build();
-                                isFirstButch = false;
-                                getNetwork().sendFile(message);
-                            }
-                        } catch (Exception e) {
-                            System.err.println("e: " + e);
+                            getNetwork().sendPrepareFile(SendFileCommand.builder()
+                                    .name(filePath.getFileName().toString())
+                                    .size(size)
+                                    .build());
+
+                            fileMessageListener = getNetwork().addReadMessageListener(command -> {
+                                if (command.getType() == CommandType.SEND_FILE_APPROVE) {
+                                    boolean isFirstButch = true;
+                                    try (FileInputStream is = new FileInputStream(filePath.toFile())) {
+                                        int read;
+                                        while ((read = is.read(buffer)) != -1) {
+                                            SendFileCommand message = SendFileCommand.builder()
+                                                    .bytes(buffer)
+                                                    .name(filePath.getFileName().toString())
+                                                    .size(size)
+                                                    .isFirstButch(isFirstButch)
+                                                    .isFinishBatch(is.available() <= 0)
+                                                    .endByteNum(read)
+                                                    .build();
+                                            isFirstButch = false;
+                                            getNetwork().sendFile(message);
+                                        }
+                                    } catch (Exception e) {
+                                        System.err.println("e: " + e);
+                                    }
+                                }
+                            });
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     });
                     thread.start();

@@ -1,6 +1,9 @@
 package org.cloud.server.db;
 
+import org.cloud.core.commands.DeleteFileCommand;
+import org.cloud.core.commands.SendFileCommand;
 import org.cloud.core.dto.User;
+import org.cloud.server.dto.UserFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,11 +11,14 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class DbService {
     private static final String DB_URL = "jdbc:sqlite:CloudServer/cloud.db";
-    private Logger log = LoggerFactory.getLogger(DbService.class);
-    private Connection connection;
+    private final Logger log = LoggerFactory.getLogger(DbService.class);
+    private final Connection connection;
 
     public DbService() throws SQLException {
         log.info("Try to connection DB: {}", DB_URL);
@@ -20,20 +26,20 @@ public class DbService {
         log.info("Connection DB successes!");
     }
 
-    public String getUsernameByLoginAndPassword(String login, String password) {
+    public User getUsernameByLoginAndPassword(String login, String password) {
         User requiredUser = new User(login, password);
         try {
-            return findUserByLoginAndPassword(requiredUser).getUsername();
+            return findUserByLoginAndPassword(requiredUser);
         } catch (SQLException e) {
             log.error("Sql exception!", e);
         }
         return null;
     }
 
-    public String createUserOrError(User user) {
+    public User createUserOrError(User user) {
         try {
-            if (!findUserByLogin(user.getLogin())) {
-                return createUser(user).getUsername();
+            if (!findUserByLogin(user)) {
+                return createUser(user);
             } else {
                 return null;
             }
@@ -41,6 +47,49 @@ public class DbService {
             log.error("Sql exception!", e);
         }
         return null;
+    }
+
+    public boolean checkAvailableSpaceToFile(User user, long size) {
+        try {
+            long availableSpaceFromUser = calculateAvailableSpaceFromUser(user);
+            log.info("Available size: {}, file size: {}", availableSpaceFromUser, size);
+            return availableSpaceFromUser - size > 0;
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return false;
+    }
+
+    public boolean setInfoFileForUser(User user, SendFileCommand fileInfo) {
+        try {
+            if (findFileInfo(user.getUsername(), fileInfo.getName(), fileInfo.getSize()) == 0) {
+                setFileInfo(user.getUsername(), fileInfo.getName(), fileInfo.getSize());
+                return true;
+            }
+            return false;
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return false;
+    }
+
+    public boolean deleteFileUser(User user, DeleteFileCommand fileCommand) {
+        try {
+            List<UserFiles> filesUser = findAllFilesUser(user.getUsername()).stream()
+                    .filter(file -> file.getFileName().equals(fileCommand.getFileName()))
+                    .collect(Collectors.toList());
+            if (filesUser.size() == 0) {
+                return false;
+            }
+            List<String> ids = filesUser.stream()
+                    .map(file -> String.valueOf(file.getId()))
+                    .collect(Collectors.toList());
+            deleteFiles(ids);
+            return true;
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return false;
     }
 
     private User findUserByLoginAndPassword(User user) throws SQLException {
@@ -52,9 +101,9 @@ public class DbService {
         return user;
     }
 
-    private boolean findUserByLogin(String login) throws SQLException {
+    private boolean findUserByLogin(User user) throws SQLException {
         ResultSet resultSet = connection.createStatement()
-                .executeQuery("SELECT * FROM user WHERE login='" + login + "'");
+                .executeQuery("SELECT * FROM user WHERE login='" + user.getLogin() + "' and username='" + user.getUsername() + "'");
         return resultSet.next();
     }
 
@@ -66,7 +115,64 @@ public class DbService {
                                 user.getPassword(),
                                 user.getUsername()
                         ));
+        setDefaultSettingUser(user);
         return user;
+    }
+
+    private void setDefaultSettingUser(User user) throws SQLException {
+        connection.createStatement()
+                .executeUpdate("INSERT INTO user_setting (user_id) VALUES ((SELECT user.id FROM user WHERE username='" + user.getUsername() + "'))");
+    }
+
+    private long calculateAvailableSpaceFromUser(User user) throws SQLException {
+        ResultSet resultSet = connection.createStatement()
+                .executeQuery("SELECT * FROM user_files WHERE user_id=(SELECT user.id FROM user WHERE username='" + user.getUsername() + "')");
+        long currentWeight = 0;
+        long availableSpace = 0;
+        while (resultSet.next()) {
+            currentWeight += resultSet.getLong("size");
+        }
+
+        ResultSet space = connection.createStatement()
+                .executeQuery("SELECT * FROM user_setting WHERE user_id=(SELECT user.id FROM user WHERE username='" + user.getUsername() + "')");
+
+        while (space.next()) {
+            availableSpace += space.getLong("available_space");
+        }
+        return availableSpace - currentWeight;
+    }
+
+    private Integer findFileInfo(String username, String filename, long size) throws SQLException {
+        List<UserFiles> filesUser = findAllFilesUser(username);
+        return (int) filesUser.stream()
+                .filter(file -> file.getFileName().equals(filename))
+                .filter(file -> file.getSize().equals(size))
+                .count();
+    }
+
+    private List<UserFiles> findAllFilesUser(String username) throws SQLException {
+        ResultSet resultSet = connection.createStatement()
+                .executeQuery("SELECT * FROM user_files WHERE user_id=(SELECT user.id FROM user WHERE username='" + username + "')");
+        List<UserFiles> userFiles = new ArrayList<>();
+        while (resultSet.next()) {
+            userFiles.add(UserFiles.builder()
+                    .id(resultSet.getInt("id"))
+                    .userId(resultSet.getInt("user_id"))
+                    .size(resultSet.getLong("size"))
+                    .fileName(resultSet.getString("filename"))
+                    .build());
+        }
+        return userFiles;
+    }
+
+    private void deleteFiles(List<String> ids) throws SQLException {
+        connection.createStatement()
+                .executeUpdate("DELETE FROM user_files WHERE id in (" + String.join(",", ids) + ")");
+    }
+
+    private void setFileInfo(String username, String filename, long size) throws SQLException {
+        connection.createStatement()
+                .executeUpdate("INSERT INTO user_files (user_id, size, filename) VALUES ((SELECT user.id FROM user WHERE username='" + username + "'), '" + size + "', '" + filename + "')");
     }
 
     public void closeConnection() {

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MessageHandler extends SimpleChannelInboundHandler<Command> {
     private Path root;
-    private boolean auth = false;
+    private User user;
     private DbService dbService;
 
     public MessageHandler(Path root) {
@@ -39,7 +39,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command command) {
         log.info("received: {}", command);
-        if (auth) {
+        if (user != null) {
             switch (command.getType()) {
                 case MESSAGE: {
                     break;
@@ -53,18 +53,39 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                             .collect(Collectors.toList());
 
                     if (fileToDelete.size() == 0) {
-                        sendCommand(ctx, Command.messageCommand("File " + msg.getFileName() + " not exist!"));
+                        sendCommand(ctx, Command.errorCommand("File " + msg.getFileName() + " not exist!"));
                         return;
                     }
 
                     fileToDelete.forEach(file -> {
                         try {
                             Files.delete(file.toPath());
+                            dbService.deleteFileUser(user, msg);
                         } catch (IOException e) {
                             sendCommand(ctx, Command.errorCommand("File " + msg.getFileName() + "  not deleted!"));
                         }
                     });
                     sendCommand(ctx, Command.messageCommand("File " + msg.getFileName() + " delete!"));
+                    break;
+                }
+                case PREPARE_SEND_FILE: {
+                    SendFileCommand msg = (SendFileCommand) command.getData();
+                    Path file = root.resolve(msg.getName());
+                    if (!dbService.checkAvailableSpaceToFile(user, msg.getSize())) {
+                        ctx.flush();
+                        sendCommand(ctx, Command.sendDiscardFileCommand("There is not enough disk space for your file!"));
+                        break;
+                    }
+                    if (!dbService.setInfoFileForUser(user, msg)) {
+                        try {
+                            Files.deleteIfExists(file);
+                            sendCommand(ctx, Command.sendDiscardFileCommand("File " + msg.getName() + " already exist!"));
+                        } catch (IOException e) {
+                            sendCommand(ctx, Command.sendDiscardFileCommand(e.getMessage()));
+                        }
+                        break;
+                    }
+                    sendCommand(ctx, new Command(null, CommandType.SEND_FILE_APPROVE));
                     break;
                 }
                 case SEND_FILE: {
@@ -85,7 +106,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                         sendCommand(ctx, Command.errorCommand(e.getMessage()));
                     }
                     if (msg.isFinishBatch()) {
-                        sendCommand(ctx, Command.messageCommand("File ok!"));
+                        sendCommand(ctx, new Command(null, CommandType.SENDER_FILE));
                     }
                     break;
                 }
@@ -100,31 +121,31 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     String login = data.getLogin();
                     String password = data.getPassword();
 
-                    String username = dbService.getUsernameByLoginAndPassword(login, password);
-                    if (username == null) {
+                    User tempUser = dbService.getUsernameByLoginAndPassword(login, password);
+                    if (tempUser == null) {
                         sendCommand(ctx, Command.errorCommand("Некорректные логин и пароль!"));
                     } else {
-                        sendCommand(ctx, Command.authOkCommand(username));
-                        if (!Files.exists(root = root.resolve(username))) {
+                        sendCommand(ctx, Command.authOkCommand(tempUser.getUsername()));
+                        if (!Files.exists(root = root.resolve(tempUser.getUsername()))) {
                             try {
                                 Files.createDirectory(root);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
                         }
-                        auth = true;
+                        user = tempUser;
                         return;
                     }
                     break;
                 }
                 case REG: {
                     User data = (User) command.getData();
-                    String userOrError = dbService.createUserOrError(data);
+                    User userOrError = dbService.createUserOrError(data);
                     if (userOrError == null) {
                         sendCommand(ctx, Command.errorCommand("Такой юзер уже существует!"));
                     } else {
-                        sendCommand(ctx, Command.authOkCommand(userOrError));
-                        auth = true;
+                        sendCommand(ctx, Command.authOkCommand(userOrError.getUsername()));
+                        user = userOrError;
                     }
                     break;
                 }

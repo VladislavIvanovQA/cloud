@@ -105,6 +105,10 @@ public class Network {
         sendCommand(Command.messageCommand(message));
     }
 
+    public void sendPrepareFile(SendFileCommand fileCommand) throws IOException {
+        sendCommand(Command.sendPrepareFileCommand(fileCommand));
+    }
+
     public void sendFile(SendFileCommand fileCommand) throws IOException {
         sendCommand(Command.sendFileCommand(fileCommand));
     }

@@ -1,12 +1,16 @@
 package org.cloud.core;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.cloud.core.commands.*;
 import org.cloud.core.dto.User;
 
 import java.io.Serializable;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Command implements Serializable {
     private Object data;
     private CommandType type;
@@ -43,6 +47,20 @@ public class Command implements Serializable {
         Command command = new Command();
         command.type = CommandType.ERROR;
         command.data = new ErrorCommandData(errorMessage);
+        return command;
+    }
+
+    public static Command sendPrepareFileCommand(SendFileCommand fileCommand) {
+        Command command = new Command();
+        command.type = CommandType.PREPARE_SEND_FILE;
+        command.data = fileCommand;
+        return command;
+    }
+
+    public static Command sendDiscardFileCommand(String message) {
+        Command command = new Command();
+        command.type = CommandType.DISCARD_FILE;
+        command.data = message;
         return command;
     }
 

@@ -26,7 +26,7 @@ public class Server {
         if (!Files.exists(root)) {
             Files.createDirectory(root);
         }
-        EventLoopGroup worker = new NioEventLoopGroup();
+        EventLoopGroup worker = new NioEventLoopGroup(10);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap.group(worker)
