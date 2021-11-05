@@ -139,7 +139,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
 
                     User tempUser = dbService.getUsernameByLoginAndPassword(login, password);
                     if (tempUser == null) {
-                        sendCommand(ctx, Command.errorCommand("Некорректные логин и пароль!"));
+                        sendCommand(ctx, Command.errorCommand("Invalid login or password!"));
                     } else {
                         sendCommand(ctx, Command.authOkCommand(tempUser.getUsername()));
                         if (!Files.exists(root = root.resolve(tempUser.getUsername()))) {
@@ -158,7 +158,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     User data = (User) command.getData();
                     User userOrError = dbService.createUserOrError(data);
                     if (userOrError == null) {
-                        sendCommand(ctx, Command.errorCommand("Такой юзер уже существует!"));
+                        sendCommand(ctx, Command.errorCommand("User exist!"));
                     } else {
                         sendCommand(ctx, Command.authOkCommand(userOrError.getUsername()));
                         user = userOrError;

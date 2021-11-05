@@ -19,12 +19,12 @@ public class Dialogs {
     }
 
     public enum AuthError {
-        EMPTY_CREDENTIALS("Логин и пароль должны быть указаны!"),
-        INVALID_CREDENTIALS("Логин и пароль заданы некорректно!"),
-        TIME_OUT("Привышено время ожидания"),
+        EMPTY_CREDENTIALS("Please enter login and password!"),
+        INVALID_CREDENTIALS("Login and password invalid!"),
+        TIME_OUT("Time-out response."),
         ;
 
-        private static final String TITLE = "Ошибка аутентификации";
+        private static final String TITLE = "Authentication error";
         private static final String TYPE = TITLE;
         private final String message;
 
@@ -38,10 +38,10 @@ public class Dialogs {
     }
 
     public enum RegError {
-        EMPTY_CREDENTIALS("Логин, пароль и имя пользователя должны быть указаны!"),
-        USER_EXISTS("Пользователь уже существует!");
+        EMPTY_CREDENTIALS("Please enter all fields: login, password and username!"),
+        USER_EXISTS("User exist!");
 
-        private static final String TITLE = "Ошибка регистрации";
+        private static final String TITLE = "Registration error";
         private static final String TYPE = TITLE;
         private final String message;
 
@@ -55,12 +55,12 @@ public class Dialogs {
     }
 
     public enum NetworkError {
-        SEND_MESSAGE("Не удалось отправить сообщение!"),
-        SERVER_CONNECT("Не удалось установить соединение с сервером!"),
+        SEND_MESSAGE("Failed to send message"),
+        SERVER_CONNECT("Server un available!"),
         ;
 
-        private static final String TITLE = "Сетевая ошибка";
-        private static final String TYPE = "Ошибка передачи данных по сети";
+        private static final String TITLE = "Network error";
+        private static final String TYPE = "Failed network send message";
         private final String message;
 
         NetworkError(String message) {
@@ -78,7 +78,7 @@ public class Dialogs {
         SELECT_FILE("Please select file!"),
         ERROR_ACCESS_FILE("Please run to Administration rule!");
 
-        private static final String TITLE = "Error!";
+        private static final String TITLE = "Application error!";
         private final String message;
 
         AppError(String message) {
