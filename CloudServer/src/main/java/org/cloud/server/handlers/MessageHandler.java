@@ -7,6 +7,7 @@ import org.cloud.core.Command;
 import org.cloud.core.CommandType;
 import org.cloud.core.commands.AuthCommandData;
 import org.cloud.core.commands.DeleteFileCommand;
+import org.cloud.core.commands.DiskSpaceCommand;
 import org.cloud.core.commands.SendFileCommand;
 import org.cloud.core.dto.User;
 import org.cloud.server.db.DbService;
@@ -51,6 +52,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     List<File> fileToDelete = files.stream()
                             .filter(file -> file.getName().equalsIgnoreCase(msg.getFileName()))
                             .collect(Collectors.toList());
+                    System.out.println(fileToDelete);
 
                     if (fileToDelete.size() == 0) {
                         sendCommand(ctx, Command.errorCommand("File " + msg.getFileName() + " not exist!"));
@@ -81,11 +83,16 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                             Files.deleteIfExists(file);
                             sendCommand(ctx, Command.sendDiscardFileCommand("File " + msg.getName() + " already exist!"));
                         } catch (IOException e) {
+                            dbService.deleteFileUser(user, new DeleteFileCommand(msg.getName()));
                             sendCommand(ctx, Command.sendDiscardFileCommand(e.getMessage()));
                         }
                         break;
                     }
-                    sendCommand(ctx, new Command(null, CommandType.SEND_FILE_APPROVE));
+                    if (Files.exists(root)) {
+                        sendCommand(ctx, new Command(null, CommandType.SEND_FILE_APPROVE));
+                    } else {
+                        sendCommand(ctx, Command.sendDiscardFileCommand("Folder user not created!\nPlease writes to support@cloud.ru"));
+                    }
                     break;
                 }
                 case SEND_FILE: {
@@ -108,6 +115,15 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     if (msg.isFinishBatch()) {
                         sendCommand(ctx, new Command(null, CommandType.SENDER_FILE));
                     }
+                    break;
+                }
+                case LIST_FILE_REQUEST: {
+                    sendCommand(ctx, Command.sendListFileResponseCommand(dbService.getListFileUser(user)));
+                    break;
+                }
+                case SPACE_REQUEST: {
+                    DiskSpaceCommand space = dbService.getSpaceInDisk(user);
+                    sendCommand(ctx, Command.sendDiskSpaceCommand(space));
                     break;
                 }
                 default: {
@@ -150,13 +166,8 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     break;
                 }
                 default: {
-                    if (command.getType() == CommandType.SEND_FILE) {
-                        if (((SendFileCommand) command.getData()).isFinishBatch()) {
-                            sendCommand(ctx, Command.authTimeOutCommand("Please auth again!"));
-                        }
-                    } else {
-                        sendCommand(ctx, Command.authTimeOutCommand("Please auth again!"));
-                    }
+                    sendCommand(ctx, Command.authTimeOutCommand("Please auth again!"));
+                    break;
                 }
             }
         }

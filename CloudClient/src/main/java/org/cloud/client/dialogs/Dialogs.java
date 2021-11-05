@@ -73,4 +73,21 @@ public class Dialogs {
 
     }
 
+    public enum AppError {
+        SELECT_FOLDER("Please select folder!"),
+        SELECT_FILE("Please select file!"),
+        ERROR_ACCESS_FILE("Please run to Administration rule!");
+
+        private static final String TITLE = "Error!";
+        private final String message;
+
+        AppError(String message) {
+            this.message = message;
+        }
+
+        public void show() {
+            showDialog(Alert.AlertType.ERROR, TITLE, null, message);
+        }
+    }
+
 }

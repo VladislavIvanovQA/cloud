@@ -1,6 +1,7 @@
 package org.cloud.server.db;
 
 import org.cloud.core.commands.DeleteFileCommand;
+import org.cloud.core.commands.DiskSpaceCommand;
 import org.cloud.core.commands.SendFileCommand;
 import org.cloud.core.dto.User;
 import org.cloud.server.dto.UserFiles;
@@ -92,6 +93,27 @@ public class DbService {
         return false;
     }
 
+    public List<String> getListFileUser(User user) {
+        try {
+            return findAllFilesUser(user.getUsername())
+                    .stream()
+                    .map(UserFiles::getFileName)
+                    .collect(Collectors.toList());
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return null;
+    }
+
+    public DiskSpaceCommand getSpaceInDisk(User user) {
+        try {
+            return getDiskSpace(user);
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return null;
+    }
+
     private User findUserByLoginAndPassword(User user) throws SQLException {
         ResultSet resultSet = connection.createStatement()
                 .executeQuery("SELECT * FROM user WHERE login='" + user.getLogin() + "' and password='" + user.getPassword() + "'");
@@ -125,6 +147,11 @@ public class DbService {
     }
 
     private long calculateAvailableSpaceFromUser(User user) throws SQLException {
+        DiskSpaceCommand diskSpace = getDiskSpace(user);
+        return diskSpace.getAvailableSpace() - diskSpace.getCurrentUse();
+    }
+
+    private DiskSpaceCommand getDiskSpace(User user) throws SQLException {
         ResultSet resultSet = connection.createStatement()
                 .executeQuery("SELECT * FROM user_files WHERE user_id=(SELECT user.id FROM user WHERE username='" + user.getUsername() + "')");
         long currentWeight = 0;
@@ -139,7 +166,7 @@ public class DbService {
         while (space.next()) {
             availableSpace += space.getLong("available_space");
         }
-        return availableSpace - currentWeight;
+        return new DiskSpaceCommand(availableSpace, currentWeight);
     }
 
     private Integer findFileInfo(String username, String filename, long size) throws SQLException {

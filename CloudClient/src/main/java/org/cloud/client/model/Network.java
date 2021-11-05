@@ -5,6 +5,7 @@ import io.netty.handler.codec.serialization.ObjectEncoderOutputStream;
 import javafx.application.Platform;
 import org.cloud.client.dialogs.Dialogs;
 import org.cloud.core.Command;
+import org.cloud.core.CommandType;
 import org.cloud.core.commands.SendFileCommand;
 
 import java.io.IOException;
@@ -125,6 +126,14 @@ public class Network {
         sendCommand(Command.deleteFileCommand(fileName));
     }
 
+    public void sendRequestListFiles() throws IOException {
+        sendCommand(Command.sendListFileRequestCommand());
+    }
+
+    public void sendRequestSpace() throws IOException {
+        sendCommand(new Command(null, CommandType.SPACE_REQUEST));
+    }
+
     private void sendCommand(Command command) throws IOException {
         try {
             System.out.println("Client: " + command);
@@ -141,18 +150,15 @@ public class Network {
     }
 
     public ReadCommandListener addReadMessageListener(ReadCommandListener listener) {
-        System.out.println("Add listener");
         listeners.add(listener);
         return listener;
     }
 
     public void removeReadMessageListener(ReadCommandListener listener) {
-        System.out.println("Remove listener");
         listeners.remove(listener);
     }
 
     public void clearReadMessageListener() {
-        System.out.println("Clear listener");
         listeners.clear();
     }
 

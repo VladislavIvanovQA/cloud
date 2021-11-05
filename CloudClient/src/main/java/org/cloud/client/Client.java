@@ -96,7 +96,7 @@ public class Client extends Application {
         authStage.setResizable(false);
         authStage.initModality(Modality.WINDOW_MODAL);
         authStage.setScene(new Scene(authDialogPanel));
-        authStage.setTitle("Авторизация");
+        authStage.setTitle("Authentication");
         authStage.setOnCloseRequest(event -> System.exit(0));
     }
 
@@ -110,7 +110,7 @@ public class Client extends Application {
         regStage.setResizable(false);
         regStage.initModality(Modality.WINDOW_MODAL);
         regStage.setScene(new Scene(regDialogPanel));
-        regStage.setTitle("Регистрация");
+        regStage.setTitle("Registration");
         regStage.setOnCloseRequest(event -> System.exit(0));
     }
 
@@ -138,7 +138,7 @@ public class Client extends Application {
     public void switchToMainChatWindow(String username) {
         Network.username = username;
         getMainStage().show();
-        getMainStage().setTitle("Имя пользователя: " + username);
+        getMainStage().setTitle("Username: " + username);
         getMainController().initMessageHandler();
         getMainController().init();
         getAuthController().close();

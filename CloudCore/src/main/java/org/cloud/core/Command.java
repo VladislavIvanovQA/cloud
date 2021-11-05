@@ -7,6 +7,7 @@ import org.cloud.core.commands.*;
 import org.cloud.core.dto.User;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -82,6 +83,26 @@ public class Command implements Serializable {
         Command command = new Command();
         command.type = CommandType.DELETE_FILE;
         command.data = new DeleteFileCommand(fileName);
+        return command;
+    }
+
+    public static Command sendListFileResponseCommand(List<String> files) {
+        Command command = new Command();
+        command.type = CommandType.LIST_FILE_RESPONSE;
+        command.data = new ListFilesCommand(files);
+        return command;
+    }
+
+    public static Command sendListFileRequestCommand() {
+        Command command = new Command();
+        command.type = CommandType.LIST_FILE_REQUEST;
+        return command;
+    }
+
+    public static Command sendDiskSpaceCommand(DiskSpaceCommand spaceCommand) {
+        Command command = new Command();
+        command.type = CommandType.SPACE_RESPONSE;
+        command.data = spaceCommand;
         return command;
     }
 }
