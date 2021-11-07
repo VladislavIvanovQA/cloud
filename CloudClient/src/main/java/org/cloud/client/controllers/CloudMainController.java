@@ -156,6 +156,9 @@ public class CloudMainController {
                     } catch (Exception e) {
                         Platform.runLater(Dialogs.AppError.ERROR_CREATE_FILE::show);
                     }
+                    if (msg.isFinishBatch()) {
+                        downloadPath = null;
+                    }
                     break;
                 }
             }

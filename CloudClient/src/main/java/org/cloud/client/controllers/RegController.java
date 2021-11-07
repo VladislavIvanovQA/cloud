@@ -60,6 +60,10 @@ public class RegController {
     }
 
     public void initMessageHandler() {
+        loginField.clear();
+        userName.clear();
+        passwordField.clear();
+
         readMessageListener = getNetwork().addReadMessageListener(command -> {
             if (command.getType() == CommandType.AUTH_OK) {
                 AuthOkCommandData data = (AuthOkCommandData) command.getData();

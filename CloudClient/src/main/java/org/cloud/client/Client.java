@@ -217,7 +217,7 @@ public class Client extends Application {
     }
 
     public void switchToGettingShareWindow() {
-//        getGetterShareController().init();
+        getGetterShareController().init();
         getGetterShareStage().show();
     }
 }

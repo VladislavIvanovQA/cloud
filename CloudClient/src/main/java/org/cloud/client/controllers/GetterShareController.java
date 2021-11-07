@@ -16,10 +16,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public class GetterShareController {
+    public static final String SELECT_DEFAULT_TEXT = "Please select folder to download";
     @FXML
     public Button getFile, closeBtn, selectFolderInput;
     @FXML
     public TextField linkInput;
+
+    public void init() {
+        linkInput.clear();
+        selectFolderInput.setText(SELECT_DEFAULT_TEXT);
+    }
 
     @FXML
     public void checkLink(ActionEvent actionEvent) {
@@ -39,7 +45,7 @@ public class GetterShareController {
         if (dir != null) {
             selectFolderInput.setText(dir.getAbsolutePath());
         } else {
-            selectFolderInput.setText("Please select folder to download");
+            selectFolderInput.setText(SELECT_DEFAULT_TEXT);
         }
     }
 
@@ -53,7 +59,6 @@ public class GetterShareController {
         } else {
             Platform.runLater(Dialogs.AppError.INVALID_LINK::show);
         }
-
     }
 
     @FXML
@@ -71,10 +76,7 @@ public class GetterShareController {
     }
 
     private void configuringDirectoryChooser(DirectoryChooser directoryChooser) {
-        // Set title for DirectoryChooser
         directoryChooser.setTitle("Select Some Directories");
-
-        // Set Initial Directory
         directoryChooser.setInitialDirectory(new File(System.getProperty("user.home")));
     }
 }

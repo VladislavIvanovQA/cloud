@@ -63,6 +63,8 @@ public class AuthController {
     }
 
     public void initMessageHandler() {
+        loginField.clear();
+        passwordField.clear();
         readMessageListener = getNetwork().addReadMessageListener(command -> {
             if (command.getType() == CommandType.AUTH_OK) {
                 AuthOkCommandData data = (AuthOkCommandData) command.getData();
