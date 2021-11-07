@@ -5,14 +5,15 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.cloud.core.Command;
 import org.cloud.core.CommandType;
-import org.cloud.core.commands.AuthCommandData;
-import org.cloud.core.commands.DeleteFileCommand;
-import org.cloud.core.commands.DiskSpaceCommand;
-import org.cloud.core.commands.SendFileCommand;
+import org.cloud.core.commands.*;
 import org.cloud.core.dto.User;
 import org.cloud.server.db.DbService;
+import org.cloud.server.dto.ShareFileDTO;
+import org.cloud.server.dto.UserFiles;
+import org.cloud.server.utils.UrlGenerator;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MessageHandler extends SimpleChannelInboundHandler<Command> {
     private Path root;
+    private Path userFolder;
     private User user;
     private DbService dbService;
 
@@ -97,7 +99,7 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                 }
                 case SEND_FILE: {
                     SendFileCommand msg = (SendFileCommand) command.getData();
-                    Path file = root.resolve(msg.getName());
+                    Path file = userFolder.resolve(msg.getName());
 
                     if (msg.isFirstButch()) {
                         try {
@@ -126,6 +128,51 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     sendCommand(ctx, Command.sendDiskSpaceCommand(space));
                     break;
                 }
+                case SHARE_FILE: {
+                    ShareFileCommand fileCommand = (ShareFileCommand) command.getData();
+                    UrlGenerator urlGenerator = new UrlGenerator();
+                    String url = String.format(Command.SHARE_LINK + "%s", urlGenerator.generate(10));
+
+                    try {
+                        dbService.sharedFile(user, fileCommand, url);
+                        sendCommand(ctx, new Command(url, CommandType.SHARE_FILE_RESPONSE));
+                    } catch (IllegalArgumentException e) {
+                        sendCommand(ctx, Command.errorCommand(String.format("File %s not uploaded!", fileCommand.getFileName())));
+                    }
+                    break;
+                }
+                case GET_SHARE_FILE: {
+                    String link = (String) command.getData();
+                    if (!link.isBlank() && link.contains(Command.SHARE_LINK)) {
+                        ShareFileDTO sharedFile = dbService.getSharedFile(link);
+                        UserFiles fileByFileId = dbService.getFileByFileId(sharedFile.getUsername(), sharedFile.getFileId());
+                        Path filePath = root.resolve(sharedFile.getUsername()).resolve(fileByFileId.getFileName()).toAbsolutePath();
+                        Thread thread = new Thread(() -> {
+                            boolean isFirstButch = true;
+                            try (FileInputStream is = new FileInputStream(filePath.toAbsolutePath().toFile())) {
+                                int read;
+                                while ((read = is.read(Command.buffer)) != -1) {
+                                    SendFileCommand message = SendFileCommand.builder()
+                                            .bytes(Command.buffer)
+                                            .name(filePath.getFileName().toString())
+                                            .size(Files.size(filePath))
+                                            .isFirstButch(isFirstButch)
+                                            .isFinishBatch(is.available() <= 0)
+                                            .endByteNum(read)
+                                            .build();
+                                    isFirstButch = false;
+                                    sendCommand(ctx, Command.sendFileCommand(message));
+                                }
+                            } catch (Exception e) {
+                                sendCommand(ctx, Command.errorCommand(String.format("File %s not found!", fileByFileId.getFileName())));
+                            }
+                        });
+                        thread.start();
+                    } else {
+                        sendCommand(ctx, Command.errorCommand(String.format("Url %s invalid", link)));
+                    }
+                    break;
+                }
                 default: {
                     throw new IllegalCallerException(String.format("Type: %s not supported", command.getType()));
                 }
@@ -142,9 +189,10 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                         sendCommand(ctx, Command.errorCommand("Invalid login or password!"));
                     } else {
                         sendCommand(ctx, Command.authOkCommand(tempUser.getUsername()));
-                        if (!Files.exists(root = root.resolve(tempUser.getUsername()))) {
+                        userFolder = root.resolve(tempUser.getUsername());
+                        if (!Files.exists(userFolder)) {
                             try {
-                                Files.createDirectory(root);
+                                Files.createDirectory(userFolder);
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
@@ -161,6 +209,14 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                         sendCommand(ctx, Command.errorCommand("User exist!"));
                     } else {
                         sendCommand(ctx, Command.authOkCommand(userOrError.getUsername()));
+                        userFolder = root.resolve(userOrError.getUsername());
+                        if (!Files.exists(userFolder)) {
+                            try {
+                                Files.createDirectory(userFolder);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
                         user = userOrError;
                     }
                     break;

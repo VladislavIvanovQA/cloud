@@ -7,12 +7,15 @@ import org.cloud.core.commands.*;
 import org.cloud.core.dto.User;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class Command implements Serializable {
+    public static final String SHARE_LINK = "https://cloud.com/";
+    public static final byte[] buffer = new byte[64000];
     private Object data;
     private CommandType type;
 
@@ -103,6 +106,24 @@ public class Command implements Serializable {
         Command command = new Command();
         command.type = CommandType.SPACE_RESPONSE;
         command.data = spaceCommand;
+        return command;
+    }
+
+    public static Command sendShareFileCommand(String filename, boolean singleDownload, LocalDate expireDateTime) {
+        Command command = new Command();
+        command.type = CommandType.SHARE_FILE;
+        command.data = ShareFileCommand.builder()
+                .fileName(filename)
+                .singleDownload(singleDownload)
+                .expireDateTime(expireDateTime)
+                .build();
+        return command;
+    }
+
+    public static Command getShareFileCommand(String url) {
+        Command command = new Command();
+        command.type = CommandType.GET_SHARE_FILE;
+        command.data = url;
         return command;
     }
 }

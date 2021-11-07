@@ -24,6 +24,8 @@
                         <Button fx:id="refreshFilesInCloud" mnemonicParsing="false" onAction="#refreshFiles"
                                 prefHeight="25.0" prefWidth="168.0" text="Refresh file in cloud" wrapText="true"/>
                         <AnchorPane prefHeight="30.0" prefWidth="30.0"/>
+                        <Button fx:id="getFileByLink" mnemonicParsing="false" onAction="#getFileByLinkAction"
+                                prefHeight="25.0" prefWidth="128.0" text="Get file to link"/>
                     </children>
                 </HBox>
             </top>

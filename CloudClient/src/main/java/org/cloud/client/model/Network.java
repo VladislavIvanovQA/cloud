@@ -10,6 +10,7 @@ import org.cloud.core.commands.SendFileCommand;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -132,6 +133,14 @@ public class Network {
 
     public void sendRequestSpace() throws IOException {
         sendCommand(new Command(null, CommandType.SPACE_REQUEST));
+    }
+
+    public void sendShareCommand(String filename, boolean singleDownload, LocalDate expireDateTime) throws IOException {
+        sendCommand(Command.sendShareFileCommand(filename, singleDownload, expireDateTime));
+    }
+
+    public void sendGetShareFileCommand(String link) throws IOException {
+        sendCommand(Command.getShareFileCommand(link));
     }
 
     private void sendCommand(Command command) throws IOException {

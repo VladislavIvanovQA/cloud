@@ -14,6 +14,7 @@ import org.cloud.client.dto.FileDTO;
 import org.cloud.client.model.Network;
 import org.cloud.client.model.ReadCommandListener;
 import org.cloud.client.utils.FileTree;
+import org.cloud.core.Command;
 import org.cloud.core.CommandType;
 import org.cloud.core.commands.DiskSpaceCommand;
 import org.cloud.core.commands.ErrorCommandData;
@@ -22,6 +23,7 @@ import org.cloud.core.commands.SendFileCommand;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +36,8 @@ import java.util.stream.Collectors;
 public class CloudMainController {
     public static final String ERROR_TITLE = "Error";
     public static final String ERROR_DISCARD_FILE = "Discard file!";
-    private final byte[] buffer = new byte[64000];
+    public static final String LINK_TITLE = "Successes!";
+
     @FXML
     public TreeView<File> tree;
     @FXML
@@ -44,12 +47,15 @@ public class CloudMainController {
     public Button refreshFilesInCloud;
     @FXML
     public ProgressBar diskLarge;
+    public static Path downloadPath;
+    @FXML
+    public Button getFileByLink;
 
     private ReadCommandListener readCommandListener;
     private Path filePath;
-    private ReadCommandListener fileMessageListener;
     @FXML
     public Label available, current;
+    private ReadCommandListener fileMessageListener;
     private List<String> foldersInCloud = new CopyOnWriteArrayList<>();
 
     public void init() {
@@ -122,6 +128,35 @@ public class CloudMainController {
                         available.setText("Available space: " + (availableSpace - currentSpace) + " MB");
                         current.setText("Used space: " + currentSpace + " MB");
                     });
+                    break;
+                }
+                case SHARE_FILE_RESPONSE: {
+                    Platform.runLater(() -> Dialogs.showWithLink(
+                            Alert.AlertType.INFORMATION,
+                            LINK_TITLE,
+                            null,
+                            command.getData().toString())
+                    );
+                    break;
+                }
+                case SEND_FILE: {
+                    SendFileCommand msg = (SendFileCommand) command.getData();
+                    Path file = downloadPath.resolve(msg.getName());
+
+                    if (msg.isFirstButch()) {
+                        try {
+                            Files.deleteIfExists(file);
+                        } catch (IOException e) {
+                            Platform.runLater(Dialogs.AppError.ERROR_REPLACE_FILE::show);
+                        }
+                    }
+
+                    try (FileOutputStream os = new FileOutputStream(file.toFile(), true)) {
+                        os.write(msg.getBytes(), 0, msg.getEndByteNum());
+                    } catch (Exception e) {
+                        Platform.runLater(Dialogs.AppError.ERROR_CREATE_FILE::show);
+                    }
+                    break;
                 }
             }
         });
@@ -162,6 +197,12 @@ public class CloudMainController {
                 MenuItem shareFileMenu = new MenuItem("Share file");
                 shareFileMenu.setOnAction(event -> {
                     System.out.println("Share file: " + pathToFile);
+                    String filename = Path.of(pathToFile.get()).getFileName().toString();
+                    if (foldersInCloud.contains(filename)) {
+                        Platform.runLater(() -> Client.INSTANCE.switchToShareWindow(filename));
+                    } else {
+                        Platform.runLater(Dialogs.AppError.FILE_NOT_UPLOAD::show);
+                    }
                 });
 
                 MenuItem autoUploadOrDeleteFileMenu = new MenuItem("Auto synchronize folder");
@@ -178,7 +219,7 @@ public class CloudMainController {
                     autoSyncFolder.forEach(System.out::println);
                     selectDisk();
                 });
-                tree.setContextMenu(new ContextMenu(sendFleMenu, autoUploadOrDeleteFileMenu, deleteFileMenu));
+                tree.setContextMenu(new ContextMenu(sendFleMenu, autoUploadOrDeleteFileMenu, shareFileMenu, deleteFileMenu));
             }
         }
     }
@@ -237,9 +278,9 @@ public class CloudMainController {
                 boolean isFirstButch = true;
                 try (FileInputStream is = new FileInputStream(path.toFile())) {
                     int read;
-                    while ((read = is.read(buffer)) != -1) {
+                    while ((read = is.read(Command.buffer)) != -1) {
                         SendFileCommand message = SendFileCommand.builder()
-                                .bytes(buffer)
+                                .bytes(Command.buffer)
                                 .name(path.getFileName().toString())
                                 .size(Files.size(path))
                                 .isFirstButch(isFirstButch)
@@ -255,5 +296,9 @@ public class CloudMainController {
                 }
             }
         });
+    }
+
+    public void getFileByLinkAction(ActionEvent actionEvent) {
+        Platform.runLater(Client.INSTANCE::switchToGettingShareWindow);
     }
 }

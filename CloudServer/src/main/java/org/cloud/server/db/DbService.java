@@ -3,7 +3,9 @@ package org.cloud.server.db;
 import org.cloud.core.commands.DeleteFileCommand;
 import org.cloud.core.commands.DiskSpaceCommand;
 import org.cloud.core.commands.SendFileCommand;
+import org.cloud.core.commands.ShareFileCommand;
 import org.cloud.core.dto.User;
+import org.cloud.server.dto.ShareFileDTO;
 import org.cloud.server.dto.UserFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -114,6 +117,36 @@ public class DbService {
         return null;
     }
 
+    public void sharedFile(User user, ShareFileCommand shareFileCommand, String link) {
+        try {
+            setShareFiles(user.getUsername(), shareFileCommand, link);
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+    }
+
+    public ShareFileDTO getSharedFile(String link) {
+        try {
+            return findShareFile(link);
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return null;
+    }
+
+    public UserFiles getFileByFileId(String username, Integer fileId) {
+        try {
+            List<UserFiles> allFilesUser = findAllFilesUser(username);
+            return allFilesUser.stream()
+                    .filter(file -> file.getId().equals(fileId))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(String.format("File id %s not found", fileId)));
+        } catch (SQLException e) {
+            log.error("Sql exception!", e);
+        }
+        return null;
+    }
+
     private User findUserByLoginAndPassword(User user) throws SQLException {
         ResultSet resultSet = connection.createStatement()
                 .executeQuery("SELECT * FROM user WHERE login='" + user.getLogin() + "' and password='" + user.getPassword() + "'");
@@ -200,6 +233,39 @@ public class DbService {
     private void setFileInfo(String username, String filename, long size) throws SQLException {
         connection.createStatement()
                 .executeUpdate("INSERT INTO user_files (user_id, size, filename) VALUES ((SELECT user.id FROM user WHERE username='" + username + "'), '" + size + "', '" + filename + "')");
+    }
+
+    private void setShareFiles(String userName, ShareFileCommand shareFileCommand, String link) throws SQLException {
+        List<UserFiles> allFilesUser = findAllFilesUser(userName);
+        UserFiles userFiles = allFilesUser.stream()
+                .filter(files -> files.getFileName().equals(shareFileCommand.getFileName()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(String.format("File: %s not found for user: %s", shareFileCommand.getFileName(), userName)));
+
+        connection.createStatement()
+                .executeUpdate("INSERT INTO share_files (file_id, limit_download, link, expire_date, username) " +
+                        "values (" + userFiles.getId() + ", " +
+                        (shareFileCommand.isSingleDownload() ? 1 : 0) + ", '" +
+                        link + "', " +
+                        "DATE('" + shareFileCommand.getExpireDateTime() + "')" + ", '" +
+                        userName + "')");
+    }
+
+    private ShareFileDTO findShareFile(String link) throws SQLException {
+        ShareFileDTO shared = null;
+        ResultSet resultSet = connection.createStatement()
+                .executeQuery("SELECT * FROM share_files WHERE link='" + link + "'");
+        while (resultSet.next()) {
+            shared = ShareFileDTO.builder()
+                    .id(resultSet.getInt("id"))
+                    .fileId(resultSet.getInt("file_id"))
+                    .limitDownload(resultSet.getInt("limit_download"))
+                    .link(resultSet.getString("link"))
+                    .expireDate(LocalDate.parse(resultSet.getString("expire_date")))
+                    .username(resultSet.getString("username"))
+                    .build();
+        }
+        return shared;
     }
 
     public void closeConnection() {
