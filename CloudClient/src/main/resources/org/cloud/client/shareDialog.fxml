@@ -7,16 +7,19 @@
     <children>
         <Label layoutX="21.0" layoutY="25.0" text="File:" AnchorPane.bottomAnchor="160.0" AnchorPane.leftAnchor="21.0"
                AnchorPane.rightAnchor="259.0" AnchorPane.topAnchor="25.0"/>
-        <Label layoutX="21.0" layoutY="93.0" prefHeight="17.0" prefWidth="62.0" text="Expire link"
-               AnchorPane.leftAnchor="21.0" AnchorPane.topAnchor="93.0"/>
-        <Label layoutX="21.0" layoutY="41.0" prefHeight="47.0" prefWidth="80.0" text="Sing download?" wrapText="true"
+        <Label fx:id="expireLink" disable="true" layoutX="21.0" layoutY="93.0" prefHeight="17.0" prefWidth="62.0"
+               text="Expire link" AnchorPane.leftAnchor="21.0" AnchorPane.topAnchor="93.0"/>
+        <Label layoutX="21.0" layoutY="41.0" prefHeight="47.0" prefWidth="80.0" text="Single download?" wrapText="true"
                AnchorPane.leftAnchor="21.0" AnchorPane.topAnchor="41.0"/>
         <Button fx:id="shareBtn" layoutX="29.0" layoutY="131.0" mnemonicParsing="false" onAction="#shareFileAction"
                 prefHeight="25.0" prefWidth="265.0" text="Share file"/>
         <Label fx:id="pathLabel" layoutX="103.0" layoutY="25.0" prefHeight="17.0" prefWidth="149.0" text="filename"/>
-        <DatePicker fx:id="datepicker" layoutX="101.0" layoutY="89.0"/>
-        <CheckBox fx:id="singDownload" layoutX="101.0" layoutY="56.0" mnemonicParsing="false"/>
+        <DatePicker fx:id="datepicker" disable="true" layoutX="101.0" layoutY="89.0"/>
+        <CheckBox fx:id="isSingleDownload" layoutX="101.0" layoutY="56.0" mnemonicParsing="false"/>
         <Button fx:id="closeBtn" layoutX="29.0" layoutY="163.0" mnemonicParsing="false" onAction="#closeAction"
                 prefHeight="25.0" prefWidth="265.0" text="Close"/>
+        <Label layoutX="147.0" layoutY="41.0" prefHeight="47.0" prefWidth="80.0" text="Limit days to download?"
+               wrapText="true"/>
+        <CheckBox fx:id="isLimitDays" onAction="#limitAction" layoutX="227.0" layoutY="56.0" mnemonicParsing="false"/>
     </children>
 </AnchorPane>

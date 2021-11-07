@@ -6,11 +6,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.Callback;
 import org.cloud.client.Client;
-import org.cloud.client.dialogs.Dialogs;
 import org.cloud.client.model.Network;
-import org.cloud.client.model.ReadCommandListener;
-import org.cloud.core.CommandType;
-import org.cloud.core.commands.AuthOkCommandData;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -22,16 +18,19 @@ public class ShareController {
     @FXML
     public DatePicker datepicker;
     @FXML
-    public Label pathLabel;
+    public Label pathLabel, expireLink;
     @FXML
-    public CheckBox singDownload;
-    private ReadCommandListener readMessageListener;
+    public CheckBox isSingleDownload, isLimitDays;
     private String filename;
 
     @FXML
     public void shareFileAction(ActionEvent actionEvent) {
         try {
-            getNetwork().sendShareCommand(filename, singDownload.isSelected(), datepicker.getValue());
+            LocalDate expireDateTime = datepicker.getValue();
+            if (!isLimitDays.isSelected()) {
+                expireDateTime = LocalDate.now().plusYears(10);
+            }
+            getNetwork().sendShareCommand(filename, isSingleDownload.isSelected(), expireDateTime);
             Platform.runLater(() -> Client.INSTANCE.getShareStage().close());
         } catch (IOException e) {
             e.printStackTrace();
@@ -39,13 +38,17 @@ public class ShareController {
     }
 
     @FXML
-    public void closeAction(ActionEvent actionEvent) {
-
+    public void closeAction() {
+        Platform.runLater(() -> Client.INSTANCE.getShareStage().close());
     }
 
     public void init(String filename) {
         pathLabel.setText(filename);
         this.filename = filename;
+        isSingleDownload.setSelected(false);
+        isLimitDays.setSelected(false);
+        expireLink.setDisable(true);
+        datepicker.setDisable(true);
         maxDate.setValue(LocalDate.now());
         Callback<DatePicker, DateCell> dayCellFactory = (final DatePicker datePicker) -> new DateCell() {
             @Override
@@ -58,33 +61,17 @@ public class ShareController {
             }
         };
         datepicker.setDayCellFactory(dayCellFactory);
-    }
-
-    private boolean connectToServer() {
-        Network network = getNetwork();
-        return network.isConnected() || network.connect();
+        datepicker.setValue(LocalDate.now());
     }
 
     private Network getNetwork() {
         return Network.getInstance();
     }
 
-    public void initMessageHandler() {
-        readMessageListener = getNetwork().addReadMessageListener(command -> {
-            if (command.getType() == CommandType.AUTH_OK) {
-                AuthOkCommandData data = (AuthOkCommandData) command.getData();
-                Platform.runLater(() -> Client.INSTANCE.switchToMainChatWindow(data.getUsername()));
-            } else if (command.getType() == CommandType.AUTH_TIME_OUT) {
-                Platform.runLater(Dialogs.AuthError.TIME_OUT::show);
-            } else if (command.getType() == CommandType.ERROR) {
-                Platform.runLater(Dialogs.RegError.USER_EXISTS::show);
-            } else {
-                Platform.runLater(Dialogs.AuthError.INVALID_CREDENTIALS::show);
-            }
+    public void limitAction() {
+        Platform.runLater(() -> {
+            expireLink.setDisable(!isLimitDays.isSelected());
+            datepicker.setDisable(!isLimitDays.isSelected());
         });
-    }
-
-    public void close() {
-        getNetwork().removeReadMessageListener(readMessageListener);
     }
 }

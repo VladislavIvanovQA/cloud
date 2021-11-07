@@ -187,7 +187,7 @@ public class CloudMainController {
                     System.out.println("Delete file: " + pathToFile);
                     try {
                         getNetwork().deleteFileMessage(Path.of(pathToFile.get()).getFileName().toString());
-                        getNetwork().sendRequestListFiles();
+                        refreshFiles();
                         sendRequestToSpace();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -203,6 +203,7 @@ public class CloudMainController {
                     } else {
                         Platform.runLater(Dialogs.AppError.FILE_NOT_UPLOAD::show);
                     }
+                    sendRequestToSpace();
                 });
 
                 MenuItem autoUploadOrDeleteFileMenu = new MenuItem("Auto synchronize folder");
@@ -246,7 +247,7 @@ public class CloudMainController {
         getNetwork().removeReadMessageListener(readCommandListener);
     }
 
-    public void refreshFiles(ActionEvent actionEvent) {
+    public void refreshFiles() {
         try {
             getNetwork().sendRequestListFiles();
         } catch (IOException e) {
@@ -290,10 +291,10 @@ public class CloudMainController {
                         isFirstButch = false;
                         getNetwork().sendFile(message);
                     }
-                    getNetwork().sendRequestListFiles();
                 } catch (Exception e) {
                     Platform.runLater(Dialogs.AppError.ERROR_ACCESS_FILE::show);
                 }
+                refreshFiles();
             }
         });
     }
