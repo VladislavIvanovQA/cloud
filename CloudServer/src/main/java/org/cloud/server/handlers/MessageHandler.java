@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -145,6 +146,14 @@ public class MessageHandler extends SimpleChannelInboundHandler<Command> {
                     String link = (String) command.getData();
                     if (!link.isBlank() && link.contains(Command.SHARE_LINK)) {
                         ShareFileDTO sharedFile = dbService.getSharedFile(link);
+                        if (sharedFile.getLimitDownload() == -1) {
+                            sendCommand(ctx, Command.errorCommand("File cannot be download! Link expired!"));
+                            return;
+                        }
+                        if (sharedFile.getExpireDate().isBefore(LocalDate.now())) {
+                            sendCommand(ctx, Command.errorCommand("File cannot be download! Link expired!"));
+                            return;
+                        }
                         UserFiles fileByFileId = dbService.getFileByFileId(sharedFile.getUsername(), sharedFile.getFileId());
                         Path filePath = root.resolve(sharedFile.getUsername()).resolve(fileByFileId.getFileName()).toAbsolutePath();
                         Thread thread = new Thread(() -> {
