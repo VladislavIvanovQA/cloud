@@ -60,12 +60,18 @@ public class RegController {
     }
 
     public void initMessageHandler() {
+        loginField.clear();
+        userName.clear();
+        passwordField.clear();
+
         readMessageListener = getNetwork().addReadMessageListener(command -> {
             if (command.getType() == CommandType.AUTH_OK) {
                 AuthOkCommandData data = (AuthOkCommandData) command.getData();
                 Platform.runLater(() -> Client.INSTANCE.switchToMainChatWindow(data.getUsername()));
             } else if (command.getType() == CommandType.AUTH_TIME_OUT) {
                 Platform.runLater(Dialogs.AuthError.TIME_OUT::show);
+            } else if (command.getType() == CommandType.ERROR) {
+                Platform.runLater(Dialogs.RegError.USER_EXISTS::show);
             } else {
                 Platform.runLater(Dialogs.AuthError.INVALID_CREDENTIALS::show);
             }

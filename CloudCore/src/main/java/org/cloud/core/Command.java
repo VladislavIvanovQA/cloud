@@ -1,17 +1,23 @@
 package org.cloud.core;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.cloud.core.commands.*;
 import org.cloud.core.dto.User;
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.util.List;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Command implements Serializable {
-
+    public static final String SHARE_LINK = "https://cloud.com/";
+    public static final byte[] buffer = new byte[64000];
     private Object data;
     private CommandType type;
-
-    public Command() {
-    }
 
     public static Command authCommand(String login, String password) {
         Command command = new Command();
@@ -48,6 +54,20 @@ public class Command implements Serializable {
         return command;
     }
 
+    public static Command sendPrepareFileCommand(SendFileCommand fileCommand) {
+        Command command = new Command();
+        command.type = CommandType.PREPARE_SEND_FILE;
+        command.data = fileCommand;
+        return command;
+    }
+
+    public static Command sendDiscardFileCommand(String message) {
+        Command command = new Command();
+        command.type = CommandType.DISCARD_FILE;
+        command.data = message;
+        return command;
+    }
+
     public static Command sendFileCommand(SendFileCommand fileCommand) {
         Command command = new Command();
         command.type = CommandType.SEND_FILE;
@@ -62,27 +82,48 @@ public class Command implements Serializable {
         return command;
     }
 
-    public Object getData() {
-        return data;
+    public static Command deleteFileCommand(String fileName) {
+        Command command = new Command();
+        command.type = CommandType.DELETE_FILE;
+        command.data = new DeleteFileCommand(fileName);
+        return command;
     }
 
-    public void setData(Object data) {
-        this.data = data;
+    public static Command sendListFileResponseCommand(List<String> files) {
+        Command command = new Command();
+        command.type = CommandType.LIST_FILE_RESPONSE;
+        command.data = new ListFilesCommand(files);
+        return command;
     }
 
-    public CommandType getType() {
-        return type;
+    public static Command sendListFileRequestCommand() {
+        Command command = new Command();
+        command.type = CommandType.LIST_FILE_REQUEST;
+        return command;
     }
 
-    public void setType(CommandType type) {
-        this.type = type;
+    public static Command sendDiskSpaceCommand(DiskSpaceCommand spaceCommand) {
+        Command command = new Command();
+        command.type = CommandType.SPACE_RESPONSE;
+        command.data = spaceCommand;
+        return command;
     }
 
-    @Override
-    public String toString() {
-        return "Command{" +
-                "data=" + data +
-                ", type=" + type +
-                '}';
+    public static Command sendShareFileCommand(String filename, boolean singleDownload, LocalDate expireDateTime) {
+        Command command = new Command();
+        command.type = CommandType.SHARE_FILE;
+        command.data = ShareFileCommand.builder()
+                .fileName(filename)
+                .singleDownload(singleDownload)
+                .expireDateTime(expireDateTime)
+                .build();
+        return command;
+    }
+
+    public static Command getShareFileCommand(String url) {
+        Command command = new Command();
+        command.type = CommandType.GET_SHARE_FILE;
+        command.data = url;
+        return command;
     }
 }

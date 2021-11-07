@@ -2,11 +2,15 @@ package org.cloud.client.model;
 
 import io.netty.handler.codec.serialization.ObjectDecoderInputStream;
 import io.netty.handler.codec.serialization.ObjectEncoderOutputStream;
+import javafx.application.Platform;
+import org.cloud.client.dialogs.Dialogs;
 import org.cloud.core.Command;
+import org.cloud.core.CommandType;
 import org.cloud.core.commands.SendFileCommand;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -71,6 +75,7 @@ public class Network {
                     if (command == null) {
                         continue;
                     }
+                    System.out.println(listeners);
                     for (ReadCommandListener messageListener : listeners) {
                         messageListener.processReceivedCommand(command);
                     }
@@ -102,6 +107,10 @@ public class Network {
         sendCommand(Command.messageCommand(message));
     }
 
+    public void sendPrepareFile(SendFileCommand fileCommand) throws IOException {
+        sendCommand(Command.sendPrepareFileCommand(fileCommand));
+    }
+
     public void sendFile(SendFileCommand fileCommand) throws IOException {
         sendCommand(Command.sendFileCommand(fileCommand));
     }
@@ -114,9 +123,34 @@ public class Network {
         sendCommand(Command.regCommand(login, password, username));
     }
 
+    public void deleteFileMessage(String fileName) throws IOException {
+        sendCommand(Command.deleteFileCommand(fileName));
+    }
+
+    public void sendRequestListFiles() throws IOException {
+        sendCommand(Command.sendListFileRequestCommand());
+    }
+
+    public void sendRequestSpace() throws IOException {
+        sendCommand(new Command(null, CommandType.SPACE_REQUEST));
+    }
+
+    public void sendShareCommand(String filename, boolean singleDownload, LocalDate expireDateTime) throws IOException {
+        sendCommand(Command.sendShareFileCommand(filename, singleDownload, expireDateTime));
+    }
+
+    public void sendGetShareFileCommand(String link) throws IOException {
+        sendCommand(Command.getShareFileCommand(link));
+    }
+
     private void sendCommand(Command command) throws IOException {
         try {
             System.out.println("Client: " + command);
+            if (!isConnected()) {
+                if (!connect()) {
+                    Platform.runLater(Dialogs.NetworkError.SERVER_CONNECT::show);
+                }
+            }
             dos.writeObject(command);
         } catch (IOException e) {
             System.err.println("Failed to send message to server");
@@ -136,7 +170,6 @@ public class Network {
     public void clearReadMessageListener() {
         listeners.clear();
     }
-
 
     public void close() {
         try {

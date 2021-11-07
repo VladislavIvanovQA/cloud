@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="400.0" prefWidth="600.0"
             xmlns="http://javafx.com/javafx/11.0.2" fx:controller="org.cloud.client.controllers.CloudMainController">
@@ -14,23 +12,33 @@
                           BorderPane.alignment="CENTER"/>
             </center>
             <top>
-                <SplitPane dividerPositions="0.29797979797979796" prefHeight="31.0" prefWidth="600.0"
-                           BorderPane.alignment="CENTER">
-                    <items>
-                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
-                            <children>
-                                <ComboBox fx:id="diskList" depthTest="DISABLE" nodeOrientation="LEFT_TO_RIGHT"
-                                          onAction="#selectDisk" promptText="Selected disk">
-                                    <opaqueInsets>
-                                        <Insets/>
-                                    </opaqueInsets>
-                                </ComboBox>
-                            </children>
-                        </AnchorPane>
-                        <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="29.0" prefWidth="272.0"/>
-                    </items>
-                </SplitPane>
+                <HBox alignment="CENTER" prefHeight="30.0" prefWidth="585.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <ComboBox fx:id="diskList" depthTest="DISABLE" nodeOrientation="LEFT_TO_RIGHT"
+                                  onAction="#selectDisk" prefHeight="25.0" prefWidth="153.0" promptText="Selected disk">
+                            <opaqueInsets>
+                                <Insets/>
+                            </opaqueInsets>
+                        </ComboBox>
+                        <AnchorPane prefHeight="30.0" prefWidth="23.0"/>
+                        <Button fx:id="refreshFilesInCloud" mnemonicParsing="false" onAction="#refreshFiles"
+                                prefHeight="25.0" prefWidth="168.0" text="Refresh file in cloud" wrapText="true"/>
+                        <AnchorPane prefHeight="30.0" prefWidth="30.0"/>
+                        <Button fx:id="getFileByLink" mnemonicParsing="false" onAction="#getFileByLinkAction"
+                                prefHeight="25.0" prefWidth="128.0" text="Get file to link"/>
+                    </children>
+                </HBox>
             </top>
+            <bottom>
+                <HBox prefHeight="28.0" prefWidth="600.0" BorderPane.alignment="CENTER">
+                    <children>
+                        <Label fx:id="available" prefHeight="17.0" prefWidth="145.0" text="Available space: "/>
+                        <ProgressBar fx:id="diskLarge" accessibleText="disk space" prefHeight="18.0" prefWidth="291.0"
+                                     progress="0.0"/>
+                        <Label fx:id="current" prefHeight="17.0" prefWidth="145.0" text="Current space:"/>
+                    </children>
+                </HBox>
+            </bottom>
         </BorderPane>
     </children>
 </AnchorPane>

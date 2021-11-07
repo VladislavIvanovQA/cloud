@@ -1,7 +1,6 @@
 package org.cloud.client;
 
 import javafx.application.Application;
-import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
@@ -9,9 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import org.cloud.client.controllers.AuthController;
-import org.cloud.client.controllers.CloudMainController;
-import org.cloud.client.controllers.RegController;
+import org.cloud.client.controllers.*;
 import org.cloud.client.model.Network;
 
 import java.io.IOException;
@@ -21,13 +18,19 @@ public class Client extends Application {
     private static final String MAIN_WINDOW_FXML = "mainWindow.fxml";
     private static final String AUTH_DIALOG_FXML = "authDialog.fxml";
     private static final String REG_DIALOG_FXML = "regDialog.fxml";
+    private static final String SHARE_DIALOG_FXML = "shareDialog.fxml";
+    private static final String GETTER_SHARE_DIALOG_FXML = "getShareDialog.fxml";
     public static Client INSTANCE;
     private Stage mainStage;
     private Stage authStage;
     private Stage regStage;
+    private Stage shareStage;
+    private Stage getterShareStage;
     private FXMLLoader mainLoader;
     private FXMLLoader authLoader;
     private FXMLLoader regLoader;
+    private FXMLLoader shareLoader;
+    private FXMLLoader getterShareLoader;
 
     public static void main(String[] args) {
         launch(args);
@@ -42,7 +45,6 @@ public class Client extends Application {
     public void start(Stage primaryStage) throws Exception {
         this.mainStage = primaryStage;
         initViews();
-        getChatStage().show();
         getAuthStage().show();
         getAuthController().initMessageHandler();
     }
@@ -59,6 +61,14 @@ public class Client extends Application {
         return regStage;
     }
 
+    public Stage getShareStage() {
+        return shareStage;
+    }
+
+    public Stage getGetterShareStage() {
+        return getterShareStage;
+    }
+
     private AuthController getAuthController() {
         return authLoader.getController();
     }
@@ -71,10 +81,20 @@ public class Client extends Application {
         return regLoader.getController();
     }
 
+    public ShareController getShareController() {
+        return shareLoader.getController();
+    }
+
+    public GetterShareController getGetterShareController() {
+        return getterShareLoader.getController();
+    }
+
     private void initViews() throws IOException {
         initMainWindow();
         initAuthDialog();
         initRegDialog();
+        initShareDialog();
+        initGetterShareDialog();
     }
 
     private void initMainWindow() throws IOException {
@@ -98,7 +118,7 @@ public class Client extends Application {
         authStage.setResizable(false);
         authStage.initModality(Modality.WINDOW_MODAL);
         authStage.setScene(new Scene(authDialogPanel));
-        authStage.setTitle("Авторизация");
+        authStage.setTitle("Authentication");
         authStage.setOnCloseRequest(event -> System.exit(0));
     }
 
@@ -112,8 +132,36 @@ public class Client extends Application {
         regStage.setResizable(false);
         regStage.initModality(Modality.WINDOW_MODAL);
         regStage.setScene(new Scene(regDialogPanel));
-        regStage.setTitle("Регистрация");
-        regStage.setOnCloseRequest(Event::consume);
+        regStage.setTitle("Registration");
+        regStage.setOnCloseRequest(event -> System.exit(0));
+    }
+
+    private void initShareDialog() throws IOException {
+        shareLoader = new FXMLLoader();
+        shareLoader.setLocation(Client.class.getResource(SHARE_DIALOG_FXML));
+        Parent shareDialogPanel = shareLoader.load();
+
+        shareStage = new Stage();
+        shareStage.initOwner(mainStage);
+        shareStage.setResizable(false);
+        shareStage.initModality(Modality.WINDOW_MODAL);
+        shareStage.setScene(new Scene(shareDialogPanel));
+        shareStage.setTitle("Share file");
+        shareStage.setOnCloseRequest(event -> shareStage.close());
+    }
+
+    private void initGetterShareDialog() throws IOException {
+        getterShareLoader = new FXMLLoader();
+        getterShareLoader.setLocation(Client.class.getResource(GETTER_SHARE_DIALOG_FXML));
+        Parent shareDialogPanel = getterShareLoader.load();
+
+        getterShareStage = new Stage();
+        getterShareStage.initOwner(mainStage);
+        getterShareStage.setResizable(false);
+        getterShareStage.initModality(Modality.WINDOW_MODAL);
+        getterShareStage.setScene(new Scene(shareDialogPanel));
+        getterShareStage.setTitle("Getting share file");
+        getterShareStage.setOnCloseRequest(event -> getterShareStage.close());
     }
 
     private void setStageForSecondScreen(Stage primaryStage) {
@@ -137,24 +185,39 @@ public class Client extends Application {
         super.stop();
     }
 
-    public Stage getChatStage() {
-        return mainStage;
-    }
-
     public void switchToMainChatWindow(String username) {
         Network.username = username;
-        getMainStage().setTitle("Имя пользователя: " + username);
+        getMainStage().show();
+        getMainStage().setTitle("Username: " + username);
         getMainController().initMessageHandler();
         getMainController().init();
         getAuthController().close();
+        getAuthStage().close();
         getRegController().close();
         getRegStage().close();
-        getAuthStage().close();
+    }
+
+    public void switchToAuthWindow() {
+        getMainController().close();
+        getMainStage().close();
+        getAuthStage().show();
+        getAuthController().initMessageHandler();
     }
 
     public void switchToRegistrationWindow() {
         getAuthStage().close();
+        getAuthController().close();
         getRegController().initMessageHandler();
         getRegStage().show();
+    }
+
+    public void switchToShareWindow(String filename) {
+        getShareController().init(filename);
+        getShareStage().show();
+    }
+
+    public void switchToGettingShareWindow() {
+        getGetterShareController().init();
+        getGetterShareStage().show();
     }
 }
